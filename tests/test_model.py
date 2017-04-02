@@ -57,7 +57,7 @@ class TestModel(object):
         obj3.delete()
 
         obj4 = Sample(ident=obj.id)
-        assert obj4.name != "test_name"
+        assert obj4._entity == None
 
 
     def test_for_json(self):
