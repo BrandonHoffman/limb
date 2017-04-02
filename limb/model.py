@@ -10,22 +10,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 from limb.router import ClassRouter
 from limb.response import *
-from limb.property import Property, Function, ClassProperty
+from limb.property import Property, Function, ClassProperty, compound
 from webob import Response
 from google.cloud import datastore
 from enum import Enum
 from six import add_metaclass
 import limb.serialize as json
 
-client = datastore.Client()
-
-class ValidationRange(Enum):
-    NONE = 0,
-    ONLY_NEW = 1,
-    ALL = 2
-
-def compound(func):
-    return Function(func)
+def client():
+    client = datastore.Client()
+    return client
 
 class Schema(type):
     def __new__(cls, name, bases, dct):
@@ -80,14 +74,15 @@ class Model(object, metaclass=Schema):
         if parent:
             parent_key = parent.key
         name = self.get_entity_name()
-        if ident:
-            self.key = client.key(name, ident, parent=parent_key)
-        else:
-            self.key = client.key(name, parent=parent_key)
         if entity:
             self._entity_cached = entity
-        elif create:
-            self._entity_cached = datastore.Entity(self.key)
+            self.key = client().key(name, self._entity.key.id, parent=parent_key)
+        elif ident:
+            self.key = client().key(name, ident, parent=parent_key)
+        else:
+            self.key = client().key(name, parent=parent_key)
+            if create:
+                self._entity_cached = datastore.Entity(self.key)
 
     def for_json(self):
         json_obj = {}
@@ -103,12 +98,6 @@ class Model(object, metaclass=Schema):
     @compound
     def id(self):
         return self.key.id
-
-    def _get_idents(self, request):
-        idents = []
-        for param in request.url_parameters.values():
-            idents += param.params
-        return idents
 
     @compound
     def url(self):
@@ -150,10 +139,7 @@ class Model(object, metaclass=Schema):
         if(cls._parent_model):
             parent = request.objects.get(cls._parent_model.get_entity_name())
         results = cls.list(parent=parent)
-        if results:
-            return OK(json.dumps(list(results)))
-        else:
-            return NotFound()
+        return OK(json.dumps(list(results)))
 
     @classmethod
     def _get_instance_handler(cls, request):
@@ -213,8 +199,7 @@ class Model(object, metaclass=Schema):
             obj.delete()
             return NoContent("DONE")
         else:
-            response = NotFound()
-        return response
+            return NotFound()
 
     @classmethod
     def get_entity_name(cls):
@@ -222,12 +207,12 @@ class Model(object, metaclass=Schema):
 
 
     def _get(self):
-        self._entity_cached = client.get(self.key)
+        self._entity_cached = client().get(self.key)
         return self._entity_cached
 
 
     def save(self):
-        client.put(self._entity)
+        client().put(self._entity)
         self.key = self._entity.key
 
     @classmethod
@@ -236,9 +221,9 @@ class Model(object, metaclass=Schema):
         ancestor = None
         if parent:
             ancestor = parent.key
-            if parent._entity == None:
+            if ancestor.id == None:
                 return None
-        query = client.query(kind=name, ancestor=ancestor)
+        query = client().query(kind=name, ancestor=ancestor)
         return cls._iterator(query, parent=parent)
 
     @classmethod
@@ -247,6 +232,6 @@ class Model(object, metaclass=Schema):
             yield cls(ident=entity.key.id, parent=parent, entity=entity)
 
     def delete(self):
-        client.delete(self.key)
+        client().delete(self.key)
         #TODO: cascade to properties will need to be in a transaction
 

@@ -22,13 +22,6 @@ class Router(object):
         self.routers = {}
         self.parent = None
 
-    def get_route(self):
-        if self.parent != None:
-            route = self.parent.get_route()
-        else:
-            route = Route()
-        return route
-
     def add_method(self, method, function):
         # TODO: possibly check for method already existing
         self.methods[method] = function
@@ -76,20 +69,18 @@ class InstanceRouter(Router):
         self.name = model.get_entity_name()
         self.type = int
 
-    def get_route(self):
-        route = super(InstanceRouter, self).get_route()
-        route.append("<id>")
-        return route
-
     def get(self, method, uri, request):
-        if len(uri) < 1:
-            return not_found
         id = self.type(uri[0])
         parent = None
         if self.model._parent_model:
             parent_name = self.model._parent_model.get_entity_name()
             parent = request.objects[parent_name]
-        request.objects[self.name] = self.model(ident=id, parent=parent)
+        obj = self.model(ident=id, parent=parent)
+        request.objects[self.name] = obj
+        obj._get()
+        if obj._entity_cached == None:
+            return not_found
+
         return super(InstanceRouter, self).get(method, uri[1:], request)
 
 class ClassRouter(Router):
@@ -98,11 +89,6 @@ class ClassRouter(Router):
         self.instance_router = InstanceRouter(model)
         self.instance_router.parent = self
         self.name = model.get_entity_name()
-
-    def get_route(self):
-        route = super(ClassRouter, self).get_route()
-        route.append(self.name)
-        return route
 
     def get_default(self, method, uri, request):
         return self.instance_router.get(method, uri, request)

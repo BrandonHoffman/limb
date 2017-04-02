@@ -11,6 +11,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 from functools import partial
 from limb.validation import ValidationError
 
+
+def compound(func):
+    return Function(func)
+
 class Property(object):
     "Emulate PyProperty_Type() in Objects/descrobject.c"
 
@@ -23,7 +27,7 @@ class Property(object):
         self.name = None #this is set later by Schema metaclass
 
     def check_type(self, obj):
-        if self.cls != obj.__class__:
+        if self.cls and self.cls != obj.__class__:
             return "Object type does not match expected"
 
     def _make_error(self, error):
@@ -70,15 +74,6 @@ class Property(object):
     def __delete__(self, obj):
         self.delete(obj)
 
-    def getter(self, fget):
-        return type(self)(self.__doc__)
-
-    def setter(self, fset):
-        return type(self)(self.__doc__)
-
-    def deleter(self, fdel):
-        return type(self)(self.__doc__)
-
 class Integer(Property):
     def __init__(self, *args, **kwargs):
         super(Integer, self).__init__(*args, **kwargs)
@@ -115,11 +110,12 @@ class ClassProperty(Property):
         pass
 
     def for_json(self, parent=None):
-        url = parent.url
-        url = "/".join([url, self.cls.get_entity_name()])
-        return {"url": url}
+        return {"url": ""}
 
     def set(self, obj, value):
+        pass
+
+    def delete(self, obj):
         pass
 
 class Function(Property):

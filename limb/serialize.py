@@ -13,6 +13,3 @@ import simplejson as json
 def dumps(obj):
     res = json.dumps(obj, for_json=True, indent="\t")
     return res
-
-def loads(obj):
-    return json.loads(obj)
