@@ -1,0 +1,18 @@
+*.py[cod]
+
+# Packages
+MANIFEST
+build
+
+# Unit Test
+.coverage
+htmlcov
+*.log
+.cache
+
+# VENV
+venv/
+.venv/
+
+# MISC
+.DS_Store
