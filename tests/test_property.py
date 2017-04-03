@@ -1,4 +1,5 @@
 from limb import property
+from limb import router
 from limb import model
 from limb.validation import ValidationError, Between
 from functools import partial
@@ -15,6 +16,9 @@ class MainObject(model.Model):
     @property.compound
     def test(self):
         return self.string + str(self.number)
+
+app = router.Router(base_url="http://localhost:8080")
+app.add_model(MainObject)
 
 class Fake():
     pass
@@ -87,9 +91,9 @@ class TestObject(TestProperty):
         assert errors == None
 
     def test_for_json(self):
-        prop = getattr(MainObject, self.property_name)
+        prop = getattr(MainObject(ident=1), self.property_name)
         url = prop.for_json()
-        assert False #this should return an absoult resoved url eventually
+        assert url['url'] == 'http://localhost:8080/mainobject/1/mainobject2'
         
     def test_get_set_delete(self):
         obj = MainObject(create=True) 

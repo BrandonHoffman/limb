@@ -13,7 +13,7 @@ class ModelTest(model.Model):
 class TestRouter(object):
     def test_router(self):
         router_test = router.Router()
-        router_test_2 = router.Router()
+        router_test_2 = router.Router("http://localhost:8080")
 
         def handler(request):
             resp = Response("hello world")
@@ -26,6 +26,8 @@ class TestRouter(object):
         router_test.add_method("POST", handler)
         router_test.add_method("GET", handler2)
         router_test_2.add_method("GET", handler)
+        assert router_test.url() == ""
+        assert router_test_2.url() == "http://localhost:8080"
         assert (router_test.methods["POST"] == handler)
         assert (router_test_2.methods["GET"] == handler)
         assert ("PATCH" not in router_test.methods)
@@ -41,6 +43,7 @@ class TestRouter(object):
         assert ("modeltest" in router_test.routers)
         assert (router_test.routers["modeltest"] == ModelTest._app)
 
+        assert ModelTest._app.url() == "/modeltest"
         assert (ModelTest._app.instance_router != None)
         assert ("modeltest2" in ModelTest._app.instance_router.routers)
 

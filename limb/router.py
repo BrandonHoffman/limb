@@ -17,10 +17,11 @@ def not_found(request):
     return NotFound("404 Not found")
 
 class Router(object):
-    def __init__(self):
+    def __init__(self, base_url=""):
         self.methods = {}
         self.routers = {}
         self.parent = None
+        self.base_url = base_url
 
     def add_method(self, method, function):
         # TODO: possibly check for method already existing
@@ -50,6 +51,13 @@ class Router(object):
             else:
                 return self.get_default(method, uri, request)
 
+    def url(self, ids=[], parts=None):
+        if parts == None:
+            parts = []
+        parts.append(self.base_url)
+        parts.reverse()
+        return '/'.join(parts)
+        
     def __call__(self, environ, start_response):
         request = Request(environ)
         request.objects = {}
@@ -68,6 +76,12 @@ class InstanceRouter(Router):
         self.model = model
         self.name = model.get_entity_name()
         self.type = int
+
+    def url(self, ids, parts=None):
+        if parts == None:
+            parts = []
+        parts.append(ids[0])
+        return self.parent.url(ids[1:], parts) 
 
     def get(self, method, uri, request):
         id = self.type(uri[0])
@@ -89,6 +103,15 @@ class ClassRouter(Router):
         self.instance_router = InstanceRouter(model)
         self.instance_router.parent = self
         self.name = model.get_entity_name()
+
+    def url(self, ids=[], parts=None):
+        if parts == None:
+            parts = []
+        parts.append(self.name)
+        if self.parent:
+            return self.parent.url(ids, parts) 
+        else:
+            return super(ClassRouter, self).url(ids, parts)
 
     def get_default(self, method, uri, request):
         return self.instance_router.get(method, uri, request)

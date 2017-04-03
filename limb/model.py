@@ -101,8 +101,12 @@ class Model(object, metaclass=Schema):
 
     @compound
     def url(self):
-        parts = [str(path) for path in self.key.flat_path]
-        return "/".join(parts)
+        idents = []
+        obj = self
+        while obj != None:
+            idents.append(str(obj.id))
+            obj = obj.parent()
+        return self._app.instance_router.url(ids=idents)
 
     @classmethod
     def add_action(cls, uri, router):

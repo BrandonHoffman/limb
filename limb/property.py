@@ -110,7 +110,9 @@ class ClassProperty(Property):
         pass
 
     def for_json(self, parent=None):
-        return {"url": ""}
+        parts = [parent.url, self.name]
+        print(parts)
+        return {"url": "/".join(parts)}
 
     def set(self, obj, value):
         pass
